@@ -391,11 +391,13 @@ Answer with the option letter (A, B, C, or D) of the correct option.
             # Process each prediction
             for idx in data['index']:
                 ans = str(data.loc[data['index'] == idx, 'answer'].values[0]).strip().upper()
-                pred = str(data.loc[data['index'] == idx, 'prediction'].values[0])
+                pred_raw = data.loc[data['index'] == idx, 'prediction'].values[0]
 
-                if FAIL_MSG in pred or pd.isna(pred):
+                # Check for NaN and FAIL_MSG before converting to string
+                if pd.isna(pred_raw) or (isinstance(pred_raw, str) and FAIL_MSG in pred_raw):
                     data.loc[idx, 'score'] = -1
                 else:
+                    pred = str(pred_raw)
                     # Extract answer letter from prediction
                     pred_clean = pred.strip().upper()
 

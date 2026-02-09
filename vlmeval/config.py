@@ -668,11 +668,15 @@ emu_series = {
     "emu3_gen": partial(Emu3_gen, model_path="BAAI/Emu3-Gen"),
 }
 
-granite_vision_series = {
-    'granite_vision_3.1_2b_preview': partial(GraniteVision3, model_path="ibm-granite/granite-vision-3.1-2b-preview"),
-    'granite_vision_3.2_2b': partial(GraniteVision3, model_path="ibm-granite/granite-vision-3.2-2b"),
-    'granite_vision_3.3_2b': partial(GraniteVision3, model_path="ibm-granite/granite-vision-3.3-2b"),
-}
+try:
+    granite_vision_series = {
+        'granite_vision_3.1_2b_preview': partial(GraniteVision3, model_path="ibm-granite/granite-vision-3.1-2b-preview"),
+        'granite_vision_3.2_2b': partial(GraniteVision3, model_path="ibm-granite/granite-vision-3.2-2b"),
+        'granite_vision_3.3_2b': partial(GraniteVision3, model_path="ibm-granite/granite-vision-3.3-2b"),
+    }
+except NameError:
+    # GraniteVision3 requires specific transformers version
+    granite_vision_series = {}
 
 mmalaya_series = {
     "MMAlaya": partial(MMAlaya, model_path="DataCanvas/MMAlaya"),
@@ -1185,6 +1189,7 @@ qwen3vl_series = {
         use_vllm=True,
         temperature=0.7, 
         max_new_tokens=16384,
+        max_model_len=100000,
         repetition_penalty=1.0,
         presence_penalty=1.5,
         top_p=0.8,

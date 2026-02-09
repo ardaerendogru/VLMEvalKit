@@ -206,6 +206,27 @@ dream_1k_dataset = {
     'DREAM-1K_0.5fps': partial(DREAM, dataset='DREAM-1K', fps=0.5),
 }
 
+trafficqa_dataset = {
+    'TrafficQA_test_8frame': partial(TrafficQA, dataset='TrafficQA', split='test', nframe=8),
+    'TrafficQA_test_16frame': partial(TrafficQA, dataset='TrafficQA', split='test', nframe=16),
+    'TrafficQA_test_32frame': partial(TrafficQA, dataset='TrafficQA', split='test', nframe=32),
+    'TrafficQA_test_64frame': partial(TrafficQA, dataset='TrafficQA', split='test', nframe=64),
+    'TrafficQA_test_0.5fps': partial(TrafficQA, dataset='TrafficQA', split='test', fps=0.5),
+    'TrafficQA_test_1fps': partial(TrafficQA, dataset='TrafficQA', split='test', fps=1.0),
+    'TrafficQA_test_2fps': partial(TrafficQA, dataset='TrafficQA', split='test', fps=2.0),
+}
+
+motionbench_dataset = {
+    'MotionBench_8frame': partial(MotionBench, dataset='MotionBench', nframe=8),
+    'MotionBench_16frame': partial(MotionBench, dataset='MotionBench', nframe=16),
+    'MotionBench_32frame': partial(MotionBench, dataset='MotionBench', nframe=32),
+    'MotionBench_64frame': partial(MotionBench, dataset='MotionBench', nframe=64),
+    'MotionBench_2fps': partial(MotionBench, dataset='MotionBench', fps=2.0),
+    'MotionBench_1fps': partial(MotionBench, dataset='MotionBench', fps=1.0),
+    'MotionBench_0.5fps': partial(MotionBench, dataset='MotionBench', fps=0.5),
+    'MotionBench_0.25fps': partial(MotionBench, dataset='MotionBench', fps=0.25),
+}
+
 supported_video_datasets = {}
 
 dataset_groups = [
@@ -213,7 +234,7 @@ dataset_groups = [
     mlvu_dataset, tempcompass_dataset, cgbench_dataset, worldsense_dataset, tamperbench_dataset,
     megabench_dataset, qbench_video_dataset, moviechat1k_dataset, vdc_dataset, video_holmes_dataset, vcrbench_dataset,
     cg_av_counting_dataset, video_mmlu_dataset, egoexobench_dataset, dream_1k_dataset, video_tt_dataset,
-    vsibench_dataset
+    vsibench_dataset, trafficqa_dataset, motionbench_dataset
 ]
 
 for grp in dataset_groups:
