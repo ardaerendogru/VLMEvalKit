@@ -1103,146 +1103,409 @@ qwen3vl_series = {
         model_path="Qwen/Qwen3-VL-235B-A22B-Instruct",
         use_custom_prompt=False,
         use_vllm=True,
-        temperature=0.7, 
+        temperature=0.7,
         max_new_tokens=16384,
         repetition_penalty=1.0,
         presence_penalty=1.5,
         top_p=0.8,
-        top_k=20
+        top_k=20,
+        max_pixels=655360,  # ~640 tokens/frame
+        total_pixels=33554432,  # 16384*32*32*2 (paper)  # ~20K tokens total for video
+        min_pixels=262144,  # 256*32*32 (paper)  # ~64 tokens minimum per frame
+        nframe=2048,  # Max frames per video
+        fps=2,  # 2 fps for video benchmarks
     ),
     "Qwen3-VL-235B-A22B-Thinking": partial(
         Qwen3VLChat,
         model_path="Qwen/Qwen3-VL-235B-A22B-Thinking",
         use_custom_prompt=False,
         use_vllm=True,
-        temperature=1.0, 
+        temperature=1.0,
         max_new_tokens=40960,
         repetition_penalty=1.0,
         presence_penalty=0.0,
         top_p=0.95,
-        top_k=20
+        top_k=20,
+        max_pixels=655360,  # ~640 tokens/frame
+        total_pixels=33554432,  # 16384*32*32*2 (paper)  # ~20K tokens total for video
+        min_pixels=262144,  # 256*32*32 (paper)  # ~64 tokens minimum per frame
+        nframe=2048,  # Max frames per video
+        fps=2,  # 2 fps for video benchmarks
     ),
     "Qwen3-VL-30B-A3B-Instruct": partial(
         Qwen3VLChat,
         model_path="Qwen/Qwen3-VL-30B-A3B-Instruct",
         use_custom_prompt=False,
         use_vllm=True,
-        temperature=0.7, 
-        max_new_tokens=16384,
+        temperature=0.7,  # Paper value for large models (32B, 30B-A3B)
+        max_new_tokens=32768,
         repetition_penalty=1.0,
-        presence_penalty=1.5,
+        presence_penalty=1.5,  # Paper value for large models
         top_p=0.8,
-        top_k=20
+        top_k=20,
+        max_pixels=655360,  # 640*32*32 (paper)  # Using 4B-Instruct video settings (16384 * 32 * 32 * 2)
+        total_pixels=33554432,  # 16384*32*32*2 (paper value) - Full 256K context
+        min_pixels=262144,  # 256*32*32 (paper value) - Paper value
+        nframe=768,  # Max frames per video from paper
+        fps=2,  # 2 fps for video benchmarks
+        # vLLM optimization settings (4-GPU setup)
+        max_num_seqs=64,  # Higher batch size for 2-GPU tensor parallelism
+        tensor_parallel_size=4,  # 2 GPUs per model for 256K context
+        gpu_memory_utilization=0.9,  # Maximize memory usage
+        enforce_eager=False,  # Enable CUDA graphs for speed
+        max_model_len=262144,  # Maximum context length
+    ),
+    # Quantized 30B model from QuantTrio
+    "Qwen3-VL-30B-A3B-Instruct-AWQ": partial(
+        Qwen3VLChat,
+        model_path="QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ",
+        use_custom_prompt=False,
+        use_vllm=True,
+        temperature=0.7,  # Paper value for large models
+        max_new_tokens=32768,
+        repetition_penalty=1.0,
+        presence_penalty=1.5,  # Paper value for large models
+        top_p=0.8,
+        top_k=20,
+        max_pixels=655360,  # 640*32*32 (paper)
+        total_pixels=33554432,  # 16384*32*32*2 (paper)
+        min_pixels=262144,  # 256*32*32 (paper)
+        nframe=768,
+        fps=2,
+        # vLLM optimization settings for quantized 30B model
+        max_num_seqs=32,  # Lower batch size for quantized model
+        tensor_parallel_size=4,  # 4 GPUs for 30B model
+        gpu_memory_utilization=0.85,  # Slightly lower for quantized
+        enforce_eager=False,
+        max_model_len=262144,
     ),
     "Qwen3-VL-30B-A3B-Thinking": partial(
         Qwen3VLChat,
         model_path="Qwen/Qwen3-VL-30B-A3B-Thinking",
         use_custom_prompt=False,
         use_vllm=True,
-        temperature=1.0, 
+        temperature=1.0,
         max_new_tokens=40960,
         repetition_penalty=1.0,
         presence_penalty=0.0,
         top_p=0.95,
-        top_k=20
+        top_k=20,
+        max_pixels=655360,  # ~640 tokens/frame
+        total_pixels=33554432,  # 16384*32*32*2 (paper)  # ~20K tokens total for video
+        min_pixels=262144,  # 256*32*32 (paper)  # ~64 tokens minimum per frame
+        nframe=2048,  # Max frames per video
+        fps=2,  # 2 fps for video benchmarks
     ),
     "Qwen3-VL-8B-Thinking": partial(
         Qwen3VLChat,
         model_path="Qwen/Qwen3-VL-8B-Thinking",
         use_custom_prompt=False,
         use_vllm=True,
-        temperature=1.0, 
+        temperature=1.0,
         max_new_tokens=40960,
         repetition_penalty=1.0,
         presence_penalty=0.0,
         top_p=0.95,
-        top_k=20
+        top_k=20,
+        max_pixels=655360,  # ~640 tokens/frame
+        total_pixels=33554432,  # 16384*32*32*2 (paper)  # ~20K tokens total for video
+        min_pixels=262144,  # 256*32*32 (paper)  # ~64 tokens minimum per frame
+        nframe=2048,  # Max frames per video
+        fps=2,  # 2 fps for video benchmarks
     ),
     "Qwen3-VL-4B-Thinking": partial(
         Qwen3VLChat,
         model_path="Qwen/Qwen3-VL-4B-Thinking",
         use_custom_prompt=False,
         use_vllm=True,
-        temperature=1.0, 
+        temperature=1.0,
         max_new_tokens=40960,
         repetition_penalty=1.0,
         presence_penalty=0.0,
         top_p=0.95,
-        top_k=20
+        top_k=20,
+        max_pixels=655360,  # ~640 tokens/frame
+        total_pixels=33554432,  # 16384*32*32*2 (paper)  # ~20K tokens total for video
+        min_pixels=262144,  # 256*32*32 (paper)  # ~64 tokens minimum per frame
+        nframe=2048,  # Max frames per video
+        fps=2,  # 2 fps for video benchmarks
     ),
     "Qwen3-VL-8B-Instruct": partial(
         Qwen3VLChat,
         model_path="Qwen/Qwen3-VL-8B-Instruct",
         use_custom_prompt=False,
         use_vllm=True,
-        temperature=0.7, 
-        max_new_tokens=16384,
+        temperature=1.0,  # Using 4B-Instruct settings
+        max_new_tokens=32768,
         repetition_penalty=1.0,
-        presence_penalty=1.5,
-        top_p=0.8,
-        top_k=20
+        presence_penalty=2.0,  # Using 4B-Instruct settings
+        top_p=1.0,
+        top_k=40,
+        max_pixels=655360,  # 640*32*32 (paper)  # Using 4B-Instruct settings (16384 * 32 * 32 * 2)
+        total_pixels=33554432,  # 16384*32*32*2 (paper value) - Full 256K context
+        min_pixels=262144,  # 256*32*32 (paper value) - Using 4B-Instruct settings
+        nframe=768,  # Max frames per video from paper
+        fps=2,  # 2 fps for video benchmarks
+        # vLLM optimization settings (4-GPU setup)
+        max_num_seqs=64,  # Higher batch size for 2-GPU tensor parallelism
+        tensor_parallel_size=2,  # 2 GPUs per model for 256K context
+        gpu_memory_utilization=0.9,  # Maximize memory usage
+        enforce_eager=False,  # Enable CUDA graphs for speed
+        max_model_len=262144,  # Maximum context length
     ),
     "Qwen3-VL-4B-Instruct": partial(
         Qwen3VLChat,
         model_path="Qwen/Qwen3-VL-4B-Instruct",
         use_custom_prompt=False,
         use_vllm=True,
-        temperature=0.7, 
-        max_new_tokens=16384,
-        max_model_len=100000,
+        temperature=1.0,  # Paper value for 4B model
+        max_new_tokens=32768,
         repetition_penalty=1.0,
-        presence_penalty=1.5,
-        top_p=0.8,
-        top_k=20
+        presence_penalty=2.0,  # Paper value
+        top_p=1.0,
+        top_k=40,
+        max_pixels=655360,  # 640*32*32 (paper value)
+        total_pixels=33554432,  # 16384*32*32*2 (paper value) - Full 256K context video budget
+        min_pixels=262144,  # 256*32*32 (paper value) - Paper value (per-frame min)
+        nframe=768,  # Max frames per video from paper
+        fps=2,  # 2 fps for video benchmarks
+        # vLLM optimization settings (4-GPU setup)
+        max_num_seqs=64,  # Higher batch size for 2-GPU tensor parallelism
+        tensor_parallel_size=2,  # 2 GPUs per model for 256K context
+        gpu_memory_utilization=0.9,  # Maximize memory usage
+        enforce_eager=False,  # Enable CUDA graphs for speed
+        max_model_len=262144,  # Maximum context length
     ),
     "Qwen3-VL-2B-Instruct": partial(
         Qwen3VLChat,
         model_path="Qwen/Qwen3-VL-2B-Instruct",
         use_custom_prompt=False,
         use_vllm=True,
-        temperature=0.7, 
-        max_new_tokens=16384,
+        temperature=1.0,  # Paper value for 4B model
+        max_new_tokens=32768,
         repetition_penalty=1.0,
-        presence_penalty=1.5,
-        top_p=0.8,
-        top_k=20
+        presence_penalty=2.0,  # Paper value
+        top_p=1.0,
+        top_k=40,
+        max_pixels=655360,  # 640*32*32 (paper value) - Paper value
+        total_pixels=33554432,  # 16384*32*32*2 (paper value) - Full 256K context video budget
+        min_pixels=262144,  # 256*32*32 (paper value) - Paper value
+        nframe=768,  # Max frames per video from paper
+        fps=2,  # 2 fps for video benchmarks
+        # vLLM optimization settings (4-GPU setup)
+        max_num_seqs=64,  # Higher batch size for 2-GPU tensor parallelism
+        tensor_parallel_size=2,  # 2 GPUs per model for 256K context
+        gpu_memory_utilization=0.9,  # Maximize memory usage
+        enforce_eager=False,  # Enable CUDA graphs for speed
+        max_model_len=262144,  # Maximum context length
     ),
     "Qwen3-VL-32B-Instruct": partial(
         Qwen3VLChat,
         model_path="Qwen/Qwen3-VL-32B-Instruct",
         use_custom_prompt=False,
         use_vllm=True,
-        temperature=0.7, 
+        temperature=0.7,
         max_new_tokens=16384,
         repetition_penalty=1.0,
         presence_penalty=1.5,
         top_p=0.8,
-        top_k=20
-
+        top_k=20,
+        max_pixels=655360,  # ~640 tokens/frame
+        total_pixels=33554432,  # 16384*32*32*2 (paper)  # ~20K tokens total for video
+        min_pixels=262144,  # 256*32*32 (paper)  # ~64 tokens minimum per frame
+        nframe=2048,  # Max frames per video
+        fps=2,  # 2 fps for video benchmarks
+    ),
+    # AWQ Quantized Models (focoosai)
+    # Note: These use compressed-tensors format (auto-detected by vLLM)
+    "Qwen3-VL-4B-Instruct-AWQ-W8A8": partial(
+        Qwen3VLChat,
+        model_path="focoosai/Qwen3-VL-4B-Instruct-awq-W8A8",
+        use_custom_prompt=False,
+        use_vllm=True,
+        temperature=1.0,
+        max_new_tokens=32768,
+        repetition_penalty=1.0,
+        presence_penalty=2.0,
+        top_p=1.0,
+        top_k=40,
+        max_pixels=655360,  # 640*32*32 (paper value)
+        total_pixels=33554432,  # 16384*32*32*2 (paper value) - Full 256K context
+        min_pixels=262144,  # 256*32*32 (paper value)
+        nframe=768,
+        fps=2,
+        max_num_seqs=64,
+        tensor_parallel_size=2,
+        gpu_memory_utilization=0.9,
+        enforce_eager=False,
+        max_model_len=262144,
+    ),
+    "Qwen3-VL-4B-Instruct-AWQ-W4A16": partial(
+        Qwen3VLChat,
+        model_path="focoosai/Qwen3-VL-4B-Instruct-awq-W4A16",
+        use_custom_prompt=False,
+        use_vllm=True,
+        temperature=1.0,
+        max_new_tokens=32768,
+        repetition_penalty=1.0,
+        presence_penalty=2.0,
+        top_p=1.0,
+        top_k=40,
+        max_pixels=655360,  # 640*32*32 (paper)
+        total_pixels=33554432,  # 16384*32*32*2 (paper)
+        min_pixels=262144,  # 256*32*32 (paper)
+        nframe=768,
+        fps=2,
+        max_num_seqs=64,
+        tensor_parallel_size=2,
+        gpu_memory_utilization=0.9,
+        enforce_eager=False,
+        max_model_len=262144,
+    ),
+    "Qwen3-VL-8B-Instruct-AWQ-W8A8": partial(
+        Qwen3VLChat,
+        model_path="focoosai/Qwen3-VL-8B-Instruct-W8A8",
+        use_custom_prompt=False,
+        use_vllm=True,
+        temperature=1.0,
+        max_new_tokens=32768,
+        repetition_penalty=1.0,
+        presence_penalty=2.0,
+        top_p=1.0,
+        top_k=40,
+        max_pixels=655360,  # 640*32*32 (paper)
+        total_pixels=33554432,  # 16384*32*32*2 (paper)
+        min_pixels=262144,  # 256*32*32 (paper)
+        nframe=768,
+        fps=2,
+        max_num_seqs=64,
+        tensor_parallel_size=2,
+        gpu_memory_utilization=0.9,
+        enforce_eager=False,
+        max_model_len=262144,
+    ),
+    "Qwen3-VL-8B-Instruct-AWQ-W4A16": partial(
+        Qwen3VLChat,
+        model_path="focoosai/Qwen3-VL-8B-Instruct-W4A16",
+        use_custom_prompt=False,
+        use_vllm=True,
+        temperature=1.0,
+        max_new_tokens=32768,
+        repetition_penalty=1.0,
+        presence_penalty=2.0,
+        top_p=1.0,
+        top_k=40,
+        max_pixels=655360,  # 640*32*32 (paper)
+        total_pixels=33554432,  # 16384*32*32*2 (paper)
+        min_pixels=262144,  # 256*32*32 (paper)
+        nframe=768,
+        fps=2,
+        max_num_seqs=64,
+        tensor_parallel_size=2,
+        gpu_memory_utilization=0.9,
+        enforce_eager=False,
+        max_model_len=262144,
+    ),
+    "Qwen3-VL-2B-Instruct-AWQ-W8A8": partial(
+        Qwen3VLChat,
+        model_path="focoosai/Qwen3-VL-2B-Instruct-awq-W8A8",
+        use_custom_prompt=False,
+        use_vllm=True,
+        temperature=1.0,
+        max_new_tokens=32768,
+        repetition_penalty=1.0,
+        presence_penalty=2.0,
+        top_p=1.0,
+        top_k=40,
+        max_pixels=655360,  # 640*32*32 (paper)
+        total_pixels=33554432,  # 16384*32*32*2 (paper)
+        min_pixels=262144,  # 256*32*32 (paper)
+        nframe=768,
+        fps=2,
+        max_num_seqs=64,
+        tensor_parallel_size=2,
+        gpu_memory_utilization=0.9,
+        enforce_eager=False,
+        max_model_len=262144,
+    ),
+    # "Qwen3-VL-2B-Instruct-AWQ-W4A16": partial(  # DISABLED: Corrupted commit on HuggingFace
+    #     Qwen3VLChat,
+    #     model_path="focoosai/Qwen3-VL-2B-Instruct-awq-W4A16",
+    #     use_custom_prompt=False,
+    #     use_vllm=True,
+    #     temperature=1.0,
+    #     max_new_tokens=32768,
+    #     repetition_penalty=1.0,
+    #     presence_penalty=2.0,
+    #     top_p=1.0,
+    #     top_k=40,
+    #     max_pixels=655360,  # 640*32*32 (paper)
+    #     total_pixels=33554432,  # 16384*32*32*2 (paper)
+    #     min_pixels=262144,
+    #     nframe=768,
+    #     fps=2,
+    #     max_num_seqs=64,
+    #     tensor_parallel_size=2,
+    #     gpu_memory_utilization=0.9,
+    #     enforce_eager=False,
+    #     max_model_len=256000,
+    # ),
+    # Local version (using downloaded files - bypass corrupted HuggingFace commit)
+    "Qwen3-VL-2B-Instruct-AWQ-W4A16": partial(
+        Qwen3VLChat,
+        model_path="/home/ubuntu/.cache/huggingface/hub/models--focoosai--Qwen3-VL-2B-Instruct-awq-W4A16-manual",
+        use_custom_prompt=False,
+        use_vllm=True,
+        temperature=1.0,
+        max_new_tokens=32768,
+        repetition_penalty=1.0,
+        presence_penalty=2.0,
+        top_p=1.0,
+        top_k=40,
+        max_pixels=655360,  # 640*32*32 (paper)
+        total_pixels=33554432,  # 16384*32*32*2 (paper)
+        min_pixels=262144,  # 256*32*32 (paper)
+        nframe=768,
+        fps=2,
+        max_num_seqs=64,
+        tensor_parallel_size=2,
+        gpu_memory_utilization=0.9,
+        enforce_eager=False,
+        max_model_len=262144,
     ),
     "Qwen3-VL-2B-Thinking": partial(
         Qwen3VLChat,
         model_path="Qwen/Qwen3-VL-2B-Thinking",
         use_custom_prompt=False,
         use_vllm=True,
-        temperature=1.0, 
+        temperature=1.0,
         max_new_tokens=40960,
         repetition_penalty=1.0,
         presence_penalty=0.0,
         top_p=0.95,
-        top_k=20
+        top_k=20,
+        max_pixels=655360,  # ~640 tokens/frame
+        total_pixels=33554432,  # 16384*32*32*2 (paper)  # ~20K tokens total for video
+        min_pixels=262144,  # 256*32*32 (paper)  # ~64 tokens minimum per frame
+        nframe=2048,  # Max frames per video
+        fps=2,  # 2 fps for video benchmarks
     ),
     "Qwen3-VL-32B-Thinking": partial(
         Qwen3VLChat,
         model_path="Qwen/Qwen3-VL-32B-Thinking",
         use_custom_prompt=False,
         use_vllm=False,
-        temperature=1.0, 
+        temperature=1.0,
         max_new_tokens=40960,
         repetition_penalty=1.0,
         presence_penalty=0.0,
         top_p=0.95,
-        top_k=20
+        top_k=20,
+        max_pixels=655360,  # ~640 tokens/frame
+        total_pixels=33554432,  # 16384*32*32*2 (paper)  # ~20K tokens total for video
+        min_pixels=262144,  # 256*32*32 (paper)  # ~64 tokens minimum per frame
+        nframe=2048,  # Max frames per video
+        fps=2,  # 2 fps for video benchmarks
     ),
     "Qwen3-Omni-30B-A3B-Instruct": partial(
         Qwen3VLChat,
@@ -1274,7 +1537,7 @@ qwen3vl_series = {
         top_k=20,
         max_new_tokens=16384,
     ),
-    
+
 }
 
 sail_series = {
