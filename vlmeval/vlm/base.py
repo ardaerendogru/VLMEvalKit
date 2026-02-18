@@ -90,7 +90,8 @@ class BaseModel:
                 assert 'type' in item and 'value' in item
                 mime, s = parse_file(item['value'])
                 if mime is None:
-                    assert item['type'] == 'text'
+                    # Allow both 'text' and 'video' types for unrecognized files
+                    assert item['type'] in ['text', 'video']
                 else:
                     assert mime.split('/')[0] == item['type']
                     item['value'] = s

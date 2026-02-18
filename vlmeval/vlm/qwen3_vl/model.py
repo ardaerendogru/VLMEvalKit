@@ -13,6 +13,11 @@ from ...smp import get_gpu_memory, listinstr
 
 VLLM_MAX_IMAGE_INPUT_NUM = 24
 
+# Maximum pixels per video frame (qwen_vl_utils internal limit)
+# VIDEO_MAX_TOKEN_NUM = 768, image_factor = 32 (16*2)
+# Paper uses: max_frames=768, total_tokens=24576 (≈32 tokens/frame avg)
+MAX_VIDEO_FRAME_PIXELS = 768 * 32 * 32  # = 786,432 (~1024x768)
+
 
 def is_moe_model(model_path: str) -> bool:
     """Check if the model is a Mixture of Experts model."""
@@ -93,6 +98,14 @@ class Qwen3VLChat(Qwen3VLPromptMixin, BaseModel):
         self.FRAME_FACTOR = 2
         self.use_audio_in_video = use_audio_in_video
 
+        # vLLM optimization parameters from config
+        self.max_num_seqs = kwargs.pop('max_num_seqs', None)
+        self.tensor_parallel_size = kwargs.pop('tensor_parallel_size', None)
+        self.enforce_eager = kwargs.pop('enforce_eager', None)
+        self.max_model_len = kwargs.pop('max_model_len', None)
+        # Support both gpu_memory_utilization and legacy gpu_utils parameter
+        self.gpu_memory_utilization = kwargs.pop('gpu_memory_utilization', None) or kwargs.pop('gpu_utils', 0.9)
+
         assert model_path is not None
         self.model_path = model_path
         from transformers import AutoProcessor, AutoModelForImageTextToText
@@ -121,7 +134,8 @@ class Qwen3VLChat(Qwen3VLPromptMixin, BaseModel):
                 os.environ['VLLM_USE_V1'] = '0'
             from vllm import LLM
             gpu_count = torch.cuda.device_count()
-            tp_size = gpu_count if gpu_count > 0 else 1
+            # Use tensor_parallel_size from config if provided, otherwise use GPU count
+            tp_size = self.tensor_parallel_size if self.tensor_parallel_size is not None else (gpu_count if gpu_count > 0 else 1)
             logging.info(
                 f'Using vLLM for {self.model_path} inference with {tp_size} GPUs (available: {gpu_count})'
             )
@@ -135,16 +149,28 @@ class Qwen3VLChat(Qwen3VLPromptMixin, BaseModel):
                 limit_mm = {"image": 3, "video": 3, "audio": 3}
             else:
                 limit_mm = {"image": self.limit_mm_per_prompt}
-            self.llm = LLM(
-                model=self.model_path,
-                max_num_seqs=8,
-                limit_mm_per_prompt=limit_mm,
-                tensor_parallel_size=tp_size,
-                enable_expert_parallel=enable_expert_parallel,
-                seed=0,
-                gpu_memory_utilization=kwargs.get("gpu_utils", 0.9),
-                trust_remote_code=True,
-            )
+            # Build vLLM LLM constructor arguments
+            llm_kwargs = {
+                "model": self.model_path,
+                "limit_mm_per_prompt": limit_mm,
+                "tensor_parallel_size": tp_size,
+                "enable_expert_parallel": enable_expert_parallel,
+                "seed": 0,
+                "gpu_memory_utilization": self.gpu_memory_utilization,
+                "trust_remote_code": True,
+            }
+            # Use max_num_seqs from config if provided, otherwise default to 8
+            if self.max_num_seqs is not None:
+                llm_kwargs["max_num_seqs"] = self.max_num_seqs
+            else:
+                llm_kwargs["max_num_seqs"] = 8
+            # Add enforce_eager if specified
+            if self.enforce_eager is not None:
+                llm_kwargs["enforce_eager"] = self.enforce_eager
+            # Add max_model_len if specified
+            if self.max_model_len is not None:
+                llm_kwargs["max_model_len"] = self.max_model_len
+            self.llm = LLM(**llm_kwargs)
         else:
             if listinstr(['omni'], model_path.lower()):
                 self.model = Qwen3OmniMoeForConditionalGeneration.from_pretrained(
@@ -190,7 +216,11 @@ class Qwen3VLChat(Qwen3VLPromptMixin, BaseModel):
                 if self.min_pixels is not None:
                     item['min_pixels'] = self.min_pixels
                 if self.max_pixels is not None:
-                    item['max_pixels'] = self.max_pixels
+                    # For videos, clamp max_pixels to the per-frame limit to avoid warnings
+                    video_max_pixels = min(self.max_pixels, MAX_VIDEO_FRAME_PIXELS)
+                    if video_max_pixels != self.max_pixels:
+                        logging.info(f'Clamping video max_pixels from {self.max_pixels} to {video_max_pixels}')
+                    item['max_pixels'] = video_max_pixels
                 if self.total_pixels is not None:
                     item['total_pixels'] = self.total_pixels
                 for key in ['resized_height', 'resized_width', 'fps', 'nframes', 'sample_fps']:
