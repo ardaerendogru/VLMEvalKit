@@ -97,7 +97,8 @@ Answer with the option letter (A, B, C, or D) of the correct option.
     TYPE = 'Video-MCQ'
 
     # Local dataset path (can be overridden via environment variable)
-    DATASET_PATH = '/storage/disk3/datasets/SUTD-TrafficQA'
+    # Default to ../data/SUTD-TrafficQA/SUTD-TrafficQA relative to repo root.
+    DATASET_PATH = '/home/ubuntu/data/SUTD-TrafficQA/SUTD-TrafficQA'
 
     def __init__(self, dataset='TrafficQA', split='test', nframe=0, fps=-1):
         self.split = split

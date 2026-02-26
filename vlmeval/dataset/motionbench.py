@@ -83,13 +83,19 @@ Select the best answer to the following multiple-choice question.
 Respond with only the letter (A, B, C, or D) of the correct option.
 """
 
-    def __init__(self, dataset='MotionBench', nframe=8, fps=-1):
+    def __init__(self, dataset='MotionBench', nframe=8, fps=-1, preload_videos=True):
         verbose_print(f'Initializing MotionBench: nframe={nframe}, fps={fps}')
         # When fps is specified, nframe should be 0 to avoid conflict
         if fps > 0:
             nframe = 0
+        self._preload_videos = preload_videos
         super().__init__(dataset=dataset, nframe=nframe, fps=fps)
         self.dataset_name = dataset
+
+        # Pre-download all videos to avoid downloading during evaluation
+        if self._preload_videos:
+            self.preload_all_videos()
+
         verbose_print(f'MotionBench initialized with {len(self.data)} samples')
 
     @classmethod
@@ -354,6 +360,71 @@ Respond with only the letter (A, B, C, or D) of the correct option.
         verbose_print(f'Dataset prepared: root={dataset_path}, data_file={data_file}')
         return dict(root=dataset_path, data_file=data_file)
 
+    def preload_all_videos(self):
+        """
+        Pre-download all videos from HuggingFace before evaluation starts.
+
+        This prevents the slow on-demand downloading during evaluation.
+        Downloads videos from both self-collected and public-dataset directories.
+        """
+        from huggingface_hub import hf_hub_download
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        verbose_print('Starting video pre-download...')
+
+        # Get unique videos from the dataset
+        unique_videos = self.data[['video', 'video_prefix', 'video_suffix']].drop_duplicates()
+        total_videos = len(unique_videos)
+        verbose_print(f'Found {total_videos} unique videos to download')
+
+        downloaded = 0
+        skipped = 0
+        failed = 0
+
+        def download_video(row):
+            video = row['video']
+            video_prefix = row['video_prefix'].lstrip('./')
+            video_suffix = row['video_suffix']
+            vid_path = osp.join(self.data_root, video_prefix, video + video_suffix)
+
+            if osp.exists(vid_path):
+                return ('skipped', video)
+
+            prefix_clean = video_prefix.strip('./')
+            hf_path = f'MotionBench/{prefix_clean}/{video}.mp4'
+
+            try:
+                downloaded_path = hf_hub_download('THUDM/MotionBench', hf_path, repo_type='dataset')
+                if osp.abspath(downloaded_path) != osp.abspath(vid_path):
+                    os.makedirs(osp.dirname(vid_path), exist_ok=True)
+                    if osp.exists(vid_path) or osp.islink(vid_path):
+                        os.remove(vid_path)
+                    os.symlink(downloaded_path, vid_path)
+                return ('downloaded', video)
+            except Exception as e:
+                return ('failed', video, str(e))
+
+        # Use thread pool for parallel downloads
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            futures = {executor.submit(download_video, row): row['video'] for _, row in unique_videos.iterrows()}
+
+            for future in as_completed(futures):
+                result = future.result()
+                if result[0] == 'downloaded':
+                    downloaded += 1
+                elif result[0] == 'skipped':
+                    skipped += 1
+                else:
+                    failed += 1
+                    verbose_print(f'Failed to download {result[1]}: {result[2]}')
+
+                # Progress update every 50 videos
+                total_done = downloaded + skipped + failed
+                if total_done % 50 == 0 or total_done == total_videos:
+                    verbose_print(f'Progress: {total_done}/{total_videos} (downloaded={downloaded}, skipped={skipped}, failed={failed})')
+
+        verbose_print(f'Video pre-download complete: downloaded={downloaded}, skipped={skipped}, failed={failed}')
+
     def save_video_frames(self, video, video_llm=False):
         """
         Extract and save frames from video.
@@ -381,19 +452,25 @@ Respond with only the letter (A, B, C, or D) of the correct option.
             verbose_print(f'Video not found locally, downloading from HuggingFace...')
             logging.info(f'Video not found locally, downloading: {video}')
             from huggingface_hub import hf_hub_download
-            # Construct the HuggingFace path
-            hf_path = f'MotionBench/{video_prefix}/{video}.mp4'
+            # Construct the HuggingFace path (strip slashes to avoid double-slash)
+            prefix_clean = video_prefix.strip('./')
+            hf_path = f'MotionBench/{prefix_clean}/{video}.mp4'
             try:
                 verbose_print(f'Downloading: {hf_path}')
                 downloaded_path = hf_hub_download('THUDM/MotionBench', hf_path, repo_type='dataset')
                 verbose_print(f'Downloaded to: {downloaded_path}')
-                # Ensure parent directory exists for creating symlink
-                os.makedirs(osp.dirname(vid_path), exist_ok=True)
-                # Create a symlink to the expected location
-                if osp.exists(vid_path) or osp.islink(vid_path):
-                    os.remove(vid_path)
-                os.symlink(downloaded_path, vid_path)
-                verbose_print(f'Created symlink: {vid_path} -> {downloaded_path}')
+                # Only create symlink if downloaded path differs from expected path
+                # hf_hub_download may already place the file at vid_path
+                if osp.abspath(downloaded_path) != osp.abspath(vid_path):
+                    # Ensure parent directory exists for creating symlink
+                    os.makedirs(osp.dirname(vid_path), exist_ok=True)
+                    # Create a symlink to the expected location
+                    if osp.exists(vid_path) or osp.islink(vid_path):
+                        os.remove(vid_path)
+                    os.symlink(downloaded_path, vid_path)
+                    verbose_print(f'Created symlink: {vid_path} -> {downloaded_path}')
+                else:
+                    verbose_print(f'File already at expected location: {vid_path}')
             except Exception as e:
                 logging.error(f'Failed to download video {video}: {e}')
                 verbose_print(f'ERROR downloading video: {e}')
@@ -489,8 +566,8 @@ Respond with only the letter (A, B, C, or D) of the correct option.
         # Add video or frames
         if video_llm:
             verbose_print(f'build_prompt: using video_llm mode')
-            vid_path = osp.join(self.data_root, line['video_prefix'].lstrip('./'),
-                              line['video'] + line['video_suffix'])
+            # Ensure the video exists locally (download on-demand if needed)
+            vid_path = self.save_video_frames(line['video'], video_llm=True)
             message.append(dict(type='video', value=vid_path))
         else:
             verbose_print(f'build_prompt: extracting frames...')

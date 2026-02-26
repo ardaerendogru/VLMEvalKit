@@ -106,7 +106,7 @@ class CrimeBench(VideoBaseDataset):
     TYPE = "Video-MCQ"
     MODALITY = "VIDEO"
 
-    DATASET_PATH = "/home/ubuntu/data/crimebench/crimebench_export"
+    DATASET_PATH = "/home/ubuntu/data/crimebench/crimebench_full"
 
     FRAMES_TMPL_SYS = """
 You will receive a video clip.
