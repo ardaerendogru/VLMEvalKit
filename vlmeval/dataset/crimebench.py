@@ -271,7 +271,7 @@ Answer with the option letter (A, B, C, or D) of the correct option.
             )
             message.append(dict(type="video", value=video_path))
         else:
-            frame_paths = self.save_video_frames(line["video"] + ".mp4")
+            frame_paths = self.save_video_frames(line["video"])
             message = [
                 dict(
                     type="text",
