@@ -249,6 +249,45 @@ Answer with the option letter (A, B, C, or D) of the correct option.
             for tier, count in tier_counts.items():
                 print(f"  Tier {tier}: {count} ({count / len(result_df) * 100:.1f}%)")
 
+    def build_prompt(self, line, video_llm=False):
+        """
+        Build prompt for CrimeBench question.
+
+        Args:
+            line: Data row (can be int index or dict)
+            video_llm: If True, use video path instead of frames
+
+        Returns:
+            Message list with video/frames and text prompt
+        """
+        if isinstance(line, int):
+            assert line < len(self)
+            line = self.data.iloc[line]
+
+        if video_llm:
+            message = [dict(type="text", value=self.FRAMES_TMPL_SYS_4VIDEO_LLM.strip())]
+            video_path = os.path.normpath(
+                os.path.join(self.data_root, line["video_path"])
+            )
+            message.append(dict(type="video", value=video_path))
+        else:
+            frame_paths = self.save_video_frames(line["video"] + ".mp4")
+            message = [
+                dict(
+                    type="text",
+                    value=self.FRAMES_TMPL_SYS.strip().format(len(frame_paths)),
+                )
+            ]
+            for frame_path in frame_paths:
+                message.append(dict(type="image", value=frame_path))
+
+        question_prompt = self.QUESTION_TMPL.format(
+            line["question"], line["A"], line["B"], line["C"], line["D"]
+        ).strip()
+        message.append(dict(type="text", value=question_prompt))
+
+        return message
+
     @classmethod
     def supported_datasets(cls):
         return ["CrimeBench"]
