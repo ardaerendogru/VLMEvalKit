@@ -289,5 +289,157 @@ Answer with the option letter (A, B, C, or D) of the correct option.
         return message
 
     @classmethod
+    def evaluate(cls, eval_file, **judge_kwargs):
+        """
+        Evaluate predictions on CrimeBench dataset.
+
+        Computes:
+        - Overall accuracy
+        - Per-tier accuracy
+        - Per-crime-type accuracy
+        - Per-question-type accuracy
+
+        Args:
+            eval_file: Path to evaluation file with predictions
+            **judge_kwargs: Additional arguments for judge
+
+        Returns:
+            Dictionary with evaluation results
+        """
+        assert get_file_extension(eval_file) in ["xlsx", "json", "tsv"], (
+            "data file should be a supported format (xlsx/json/tsv) file"
+        )
+
+        score_file = get_intermediate_file_path(eval_file, "_score")
+
+        if not osp.exists(score_file):
+            model = judge_kwargs.get("model", "exact_matching")
+
+            if model == "exact_matching":
+                model = None
+            else:
+                model = build_judge(**judge_kwargs)
+                if not model.working():
+                    warnings.warn(
+                        "OPENAI API is not working properly, will use exact matching for evaluation"
+                    )
+                    warnings.warn(DEBUG_MESSAGE)
+                    model = None
+
+            data = load(eval_file)
+
+            for idx in data["index"]:
+                ans = (
+                    str(data.loc[data["index"] == idx, "answer"].values[0])
+                    .strip()
+                    .upper()
+                )
+                pred_raw = data.loc[data["index"] == idx, "prediction"].values[0]
+
+                if pd.isna(pred_raw) or (
+                    isinstance(pred_raw, str) and FAIL_MSG in pred_raw
+                ):
+                    data.loc[idx, "score"] = -1
+                else:
+                    pred = str(pred_raw)
+                    pred_clean = pred.strip().upper()
+
+                    match = re.search(r"[A-D]", pred_clean)
+                    if match:
+                        pred_letter = match.group(0)
+                        data.loc[idx, "score"] = int(pred_letter == ans)
+                    else:
+                        data.loc[idx, "score"] = 0
+
+            rejected = [x for x in data["score"] if x == -1]
+
+            print(
+                f"Among {len(data)} questions, "
+                f"failed to obtain prediction for {len(data) - len(data[~pd.isna(data['prediction'])])} questions, "
+                f"failed to obtain the score for another {len(rejected)} questions. "
+                f"Those questions will be counted as -1 score in ALL rating, and will not be counted in VALID rating."
+            )
+
+            dump(data, score_file)
+
+        data = load(score_file)
+        valid_data = data[data["score"] != -1]
+        overall_acc = (
+            valid_data["score"].sum() / len(valid_data) if len(valid_data) > 0 else 0
+        )
+
+        results = {
+            "overall": {
+                "acc": overall_acc,
+                "total": len(data),
+                "valid": len(valid_data),
+                "correct": int(valid_data["score"].sum()) if len(valid_data) > 0 else 0,
+            }
+        }
+
+        # Per-tier accuracy
+        if "tier" in data.columns:
+            for tier in TIERS:
+                tier_data = data[data["tier"] == tier]
+                tier_valid = tier_data[tier_data["score"] != -1]
+                if len(tier_valid) > 0:
+                    tier_acc = tier_valid["score"].sum() / len(tier_valid)
+                    results[f"tier_{tier}"] = {
+                        "acc": tier_acc,
+                        "total": len(tier_data),
+                        "valid": len(tier_valid),
+                        "correct": int(tier_valid["score"].sum()),
+                    }
+
+        # Per-crime-type accuracy
+        if "crime_type" in data.columns:
+            for crime_type in data["crime_type"].unique():
+                crime_data = data[data["crime_type"] == crime_type]
+                crime_valid = crime_data[crime_data["score"] != -1]
+                if len(crime_valid) > 0:
+                    crime_acc = crime_valid["score"].sum() / len(crime_valid)
+                    safe_key = crime_type.lower().replace(" ", "_").replace("-", "_")
+                    results[f"crime_{safe_key}"] = {
+                        "acc": crime_acc,
+                        "total": len(crime_data),
+                        "valid": len(crime_valid),
+                        "correct": int(crime_valid["score"].sum()),
+                    }
+
+        # Per-question-type accuracy
+        if "question_type" in data.columns:
+            for q_type in data["question_type"].unique():
+                q_type_data = data[data["question_type"] == q_type]
+                q_type_valid = q_type_data[q_type_data["score"] != -1]
+                if len(q_type_valid) > 0:
+                    q_type_acc = q_type_valid["score"].sum() / len(q_type_valid)
+                    results[f"qtype_{q_type}"] = {
+                        "acc": q_type_acc,
+                        "total": len(q_type_data),
+                        "valid": len(q_type_valid),
+                        "correct": int(q_type_valid["score"].sum()),
+                    }
+
+        tgt_file = get_intermediate_file_path(eval_file, "_rating", "json")
+        dump(results, tgt_file)
+
+        print(f"\nCrimeBench Evaluation Results:")
+        print(
+            f"Overall Accuracy: {overall_acc:.4f} ({int(valid_data['score'].sum()) if len(valid_data) > 0 else 0}/{len(valid_data)})"
+        )
+
+        if "tier" in data.columns:
+            print(f"\nPer-Tier Accuracy:")
+            for tier in TIERS:
+                key = f"tier_{tier}"
+                if key in results:
+                    r = results[key]
+                    print(
+                        f"  Tier {tier}: {r['acc']:.4f} ({r['correct']}/{r['valid']})"
+                    )
+
+        return results
+
+    @classmethod
     def supported_datasets(cls):
         return ["CrimeBench"]
