@@ -275,7 +275,7 @@ Answer with the option letter (A, B, C, or D) of the correct option.
             message = [
                 dict(
                     type="text",
-                    value=self.FRAMES_TMPL_SYS.strip().format(len(frame_paths)),
+                    value=self.FRAMES_TMPL_SYS.strip(),
                 )
             ]
             for frame_path in frame_paths:
