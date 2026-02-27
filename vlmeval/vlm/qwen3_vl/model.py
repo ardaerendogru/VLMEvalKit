@@ -22,7 +22,7 @@ MAX_VIDEO_FRAME_PIXELS = 768 * 32 * 32  # = 786,432 (~1024x768)
 def is_moe_model(model_path: str) -> bool:
     """Check if the model is a Mixture of Experts model."""
     path_parts = model_path.split("/")
-    non_moe_patterns = ["2B", "4B", "8B", "32B"]
+    non_moe_patterns = ["2B", "4B", "8B", "27B", "32B"]
     for part in path_parts:
         if any(pattern in part for pattern in non_moe_patterns):
             return False
