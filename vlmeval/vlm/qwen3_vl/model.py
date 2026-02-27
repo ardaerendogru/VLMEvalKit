@@ -621,8 +621,13 @@ class Qwen3_5VLChat(Qwen3VLChat):
         if self.verbose:
             print(f"\033[31m{messages}\033[0m")
 
+        # Pass chat_template_kwargs to disable thinking mode
+        template_kwargs = {}
+        if not self.enable_thinking:
+            template_kwargs["enable_thinking"] = False
+
         text = self.processor.apply_chat_template(
-            messages, tokenize=False, add_generation_prompt=True
+            messages, tokenize=False, add_generation_prompt=True, **template_kwargs
         )
         if is_omni:
             audios, image_inputs, video_inputs = process_mm_info(
@@ -662,9 +667,6 @@ class Qwen3_5VLChat(Qwen3VLChat):
             mm_processor_kwargs["use_audio_in_video"] = self.use_audio_in_video
         elif video_kwargs is not None:
             mm_processor_kwargs.update(video_kwargs)
-
-        if not self.enable_thinking:
-            mm_processor_kwargs["chat_template_kwargs"] = {"enable_thinking": False}
 
         if mm_processor_kwargs:
             req["mm_processor_kwargs"] = mm_processor_kwargs
