@@ -1,0 +1,42 @@
+# Qwen3-VL 2B / 4B (base + quantized) on TrafficQA, MotionBench, MVBench at 1 fps
+# GPU layout: first command on GPUs 0,1; second command on GPUs 2,3.
+# Run each PAIR together (e.g., in background or separate shells) so 2 models run at the same time.
+
+############################
+# TrafficQA_test_1fps
+############################
+
+# Base models
+CUDA_VISIBLE_DEVICES=0,1 python run.py --data TrafficQA_test_1fps --model Qwen3-VL-2B-Instruct --verbose
+CUDA_VISIBLE_DEVICES=2,3 python run.py --data TrafficQA_test_1fps --model Qwen3-VL-4B-Instruct --verbose
+
+# Quantized AWQ W8A8 models
+CUDA_VISIBLE_DEVICES=0,1 python run.py --data TrafficQA_test_1fps --model Qwen3-VL-2B-Instruct-AWQ-W8A8 --verbose
+CUDA_VISIBLE_DEVICES=2,3 python run.py --data TrafficQA_test_1fps --model Qwen3-VL-4B-Instruct-AWQ-W8A8 --verbose
+
+
+############################
+# MotionBench_1fps
+############################
+
+# Base models
+CUDA_VISIBLE_DEVICES=0,1 python run.py --data MotionBench_1fps --model Qwen3-VL-2B-Instruct --verbose
+CUDA_VISIBLE_DEVICES=2,3 python run.py --data MotionBench_1fps --model Qwen3-VL-4B-Instruct --verbose
+
+# Quantized AWQ W8A8 models
+CUDA_VISIBLE_DEVICES=0,1 python run.py --data MotionBench_1fps --model Qwen3-VL-2B-Instruct-AWQ-W8A8 --verbose
+CUDA_VISIBLE_DEVICES=2,3 python run.py --data MotionBench_1fps --model Qwen3-VL-4B-Instruct-AWQ-W8A8 --verbose
+
+
+############################
+# MVBench_MP4_1fps
+############################
+
+# Base models
+CUDA_VISIBLE_DEVICES=0,1 python run.py --data MVBench_MP4_1fps --model Qwen3-VL-2B-Instruct --verbose
+CUDA_VISIBLE_DEVICES=2,3 python run.py --data MVBench_MP4_1fps --model Qwen3-VL-4B-Instruct --verbose
+
+# Quantized AWQ W8A8 models
+CUDA_VISIBLE_DEVICES=0,1 python run.py --data MVBench_MP4_1fps --model Qwen3-VL-2B-Instruct-AWQ-W8A8 --verbose
+CUDA_VISIBLE_DEVICES=2,3 python run.py --data MVBench_MP4_1fps --model Qwen3-VL-4B-Instruct-AWQ-W8A8 --verbose
+
