@@ -9,6 +9,7 @@ from .thyme import Thyme
 from .cogvlm import CogVlm, GLM4v, GLMThinking
 from .emu import Emu, Emu3_chat, Emu3_gen
 from .eagle_x import Eagle
+
 try:
     from .granite_vision import GraniteVision3
 except ImportError:
@@ -27,7 +28,14 @@ from .llava import (
 )
 from .vita import VITA, VITAQwen2
 from .long_vita import LongVITA
-from .minicpm_v import MiniCPM_V, MiniCPM_Llama3_V, MiniCPM_V_2_6, MiniCPM_o_2_6, MiniCPM_V_4, MiniCPM_V_4_5
+from .minicpm_v import (
+    MiniCPM_V,
+    MiniCPM_Llama3_V,
+    MiniCPM_V_2_6,
+    MiniCPM_o_2_6,
+    MiniCPM_V_4,
+    MiniCPM_V_4_5,
+)
 from .minigpt4 import MiniGPT4
 from .mmalaya import MMAlaya, MMAlaya2
 from .monkey import Monkey, MonkeyChat
@@ -39,7 +47,7 @@ from .open_flamingo import OpenFlamingo
 from .pandagpt import PandaGPT
 from .qwen_vl import QwenVL, QwenVLChat
 from .qwen2_vl import Qwen2VLChat, Qwen2VLChatAguvis
-from .qwen3_vl import Qwen3VLChat
+from .qwen3_vl import Qwen3VLChat, Qwen3_5VLChat
 from .transcore_m import TransCoreM
 from .visualglm import VisualGLM
 from .xcomposer import (
