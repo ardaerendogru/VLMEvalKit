@@ -237,9 +237,11 @@ def infer_data(
             FAIL_MSG = "Failed to obtain answer"
             try:
                 response = model.generate(message=struct, dataset=dataset_name)
-            except RuntimeError as err:
+            except Exception as err:
+                # Broadly catch exceptions (including KeyError from video backends)
+                # so that problematic samples are skipped instead of crashing
                 torch.cuda.synchronize()
-                warnings.error(f"{type(err)} {str(err)}")
+                warnings.warn(f"{type(err)} {str(err)}")
                 response = f"{FAIL_MSG}: {type(err)} {str(err)}"
         else:
             response = model.generate(message=struct, dataset=dataset_name)

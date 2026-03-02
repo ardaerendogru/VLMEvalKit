@@ -182,6 +182,29 @@ Answer with the option letter (A, B, C, or D) of the correct option.
                 f"Please ensure videos/ directory exists."
             )
 
+        # Filter out samples whose video files are missing or empty (e.g., 0-byte corrupted files)
+        data = load(tsv_path)
+        keep_indices = []
+        removed = 0
+
+        for idx, row in data.iterrows():
+            video_rel = row.get("video_path", "")
+            if not video_rel:
+                removed += 1
+                continue
+            video_full = os.path.join(video_root, video_rel)
+            if not os.path.exists(video_full) or os.path.getsize(video_full) == 0:
+                removed += 1
+                continue
+            keep_indices.append(idx)
+
+        if removed:
+            data = data.loc[keep_indices].reset_index(drop=True)
+            data.to_csv(tsv_path, sep="\t", index=False)
+            print(
+                f"Filtered {removed} entries with missing or empty video files from {tsv_path}"
+            )
+
         return dict(root=video_root, data_file=tsv_path)
 
     def _needs_regeneration(self, arrow_file, tsv_path):
