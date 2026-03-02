@@ -15,11 +15,11 @@ Key Implementation Details:
 - Reports comprehensive metrics: overall, per-tier, per-crime-type, per-question-type
 
 Data Statistics:
-- Total QA pairs: 5,625
-- Unique videos: 481
+- Total QA pairs: 4,926
+- Unique videos: 3,226
 - Tiers: 1, 2, 3, 5
 - Question types: 18
-- Crime types: 19
+- Crime types: 30
 """
 
 import os
@@ -97,16 +97,16 @@ class CrimeBench(VideoBaseDataset):
         fps: Frames per second for sampling (mutually exclusive with nframe)
 
     Dataset Statistics:
-    - Total: 5,625 QA pairs from 481 videos
+    - Total: 4,926 QA pairs from 3,226 videos
     - Tiers: 1, 2, 3, 5
     - Question types: 18
-    - Crime types: 19
+    - Crime types: 30
     """
 
     TYPE = "Video-MCQ"
     MODALITY = "VIDEO"
 
-    DATASET_PATH = "/home/ubuntu/data/crimebench/crimebench_full"
+    DATASET_PATH = "/home/ubuntu/data/CrimeBench"
 
     FRAMES_TMPL_SYS = """
 You will receive a video clip.
@@ -157,13 +157,13 @@ Answer with the option letter (A, B, C, or D) of the correct option.
                 f"Please set CRIMEBENCH_DATA_PATH environment variable or ensure dataset is at {self.DATASET_PATH}."
             )
 
-        parquet_dir = os.path.join(data_path, "crimebench_v2_final.parquet")
+        parquet_dir = os.path.join(data_path, "crimebench_v2_reduced.parquet")
         arrow_file = os.path.join(parquet_dir, "data-00000-of-00001.arrow")
 
         if not os.path.exists(arrow_file):
             raise FileNotFoundError(
                 f"Arrow file not found: {arrow_file}. "
-                f"Please ensure crimebench_v2_final.parquet directory exists."
+                f"Please ensure crimebench_v2_reduced.parquet directory exists."
             )
 
         tsv_filename = f"{dataset_name}.tsv"
